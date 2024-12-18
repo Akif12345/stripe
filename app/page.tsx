@@ -1,101 +1,141 @@
-import Image from "next/image";
+'use client'
+
+import { useState, useEffect } from 'react'
+import ProductGrid from '@/components/ProductGrid'
+import CartDrawer from '@/components/CartDrawer'
+import Checkout from '@/components/Checkout'
+import Footer from '@/components/Footer'
+import Login from '@/components/Login'
+import { categories } from './data/categories'
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [products, setProducts] = useState(Object.values(categories).flatMap(category => category.products))
+  const [cartItems, setCartItems] = useState([])
+  const [wishlistItems, setWishlistItems] = useState([])
+  const [isCartOpen, setIsCartOpen] = useState(false)
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
+  const [isLoginOpen, setIsLoginOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [user, setUser] = useState(null)
+  const [currency, setCurrency] = useState('USD')
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+  useEffect(() => {
+    // Simulating dynamic pricing
+    const interval = setInterval(() => {
+      setProducts(prevProducts =>
+        prevProducts.map(product => ({
+          ...product,
+          currentPrice: Number((product.basePrice * (0.9 + Math.random() * 0.2)).toFixed(2))
+        }))
+      )
+    }, 30000) // Update prices every 30 seconds
+
+    return () => clearInterval(interval)
+  }, [])
+
+  const addToCart = (product) => {
+    setCartItems(prevItems => {
+      const existingItem = prevItems.find(item => item.id === product.id)
+      if (existingItem) {
+        return prevItems.map(item =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        )
+      }
+      return [...prevItems, { ...product, quantity: 1 }]
+    })
+  }
+
+  const removeFromCart = (productId) => {
+    setCartItems(prevItems => prevItems.filter(item => item.id !== productId))
+  }
+
+  const toggleWishlist = (productId) => {
+    setWishlistItems(prevItems => {
+      if (prevItems.includes(productId)) {
+        return prevItems.filter(id => id !== productId)
+      } else {
+        return [...prevItems, productId]
+      }
+    })
+  }
+
+  const handleSearch = (query) => {
+    setSearchQuery(query)
+    const filteredProducts = Object.values(categories).flatMap(category => 
+      category.products.filter(product => 
+        product.name.toLowerCase().includes(query.toLowerCase())
+      )
+    )
+    setProducts(filteredProducts)
+  }
+
+  const handleLogin = (email, password) => {
+    // Here you would typically authenticate the user
+    console.log('Login attempted with:', email, password)
+    setUser({ email })
+    setIsLoginOpen(false)
+    // Generate a coupon for the logged-in user
+    const coupon = {
+      code: 'WELCOME10',
+      discount: 0.1 // 10% discount
+    }
+    alert(`Welcome! Here's your coupon code: ${coupon.code}`)
+  }
+
+  const handleLogout = () => {
+    setUser(null)
+  }
+
+  const handlePlaceOrder = (orderData) => {
+    // Generate a random order ID
+    const orderId = Math.random().toString(36).substr(2, 9).toUpperCase()
+    console.log('Order placed:', { ...orderData, items: cartItems, orderId })
+    // Here you would typically send an email to the user
+    alert(`Thank you for shopping! Your order ID is ${orderId}. A confirmation email has been sent to ${user.email}.`)
+    setCartItems([])
+    setIsCheckoutOpen(false)
+  }
+
+  const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+  const wishlistCount = wishlistItems.length
+
+  return (
+    <main className="min-h-screen flex flex-col">
+      {isCheckoutOpen ? (
+        <Checkout 
+          cartItems={cartItems} 
+          onPlaceOrder={handlePlaceOrder}
+          coupon={{ code: 'WELCOME10', discount: 0.1 }}
+          currency={currency}
+        />
+      ) : (
+        <ProductGrid 
+          products={products} 
+          onAddToCart={addToCart}
+          onToggleWishlist={toggleWishlist}
+          wishlistItems={wishlistItems}
+          currency={currency}
+        />
+      )}
+      <CartDrawer 
+        isOpen={isCartOpen} 
+        onClose={() => setIsCartOpen(false)} 
+        cartItems={cartItems}
+        onRemoveFromCart={removeFromCart}
+        onCheckout={() => {
+          setIsCartOpen(false)
+          setIsCheckoutOpen(true)
+        }}
+        currency={currency}
+      />
+      {isLoginOpen && (
+        <Login 
+          onLogin={handleLogin}
+          onClose={() => setIsLoginOpen(false)}
+        />
+      )}
+      <Footer />
+    </main>
+  )
 }
+
